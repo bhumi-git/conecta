@@ -1,0 +1,44 @@
+# ⚡ DELETE THIS - SIMPLE VERSION
+
+## ALL YOU NEED TO DO:
+
+Open File Explorer and go to this folder:
+```
+C:\Users\HP\OneDrive\Desktop\Conecta\src\pages\
+```
+
+Inside, find a folder called **"src"** and DELETE IT.
+
+That's it! ✅
+
+---
+
+## VISUAL MAP:
+
+You will see this:
+```
+Conecta
+  └── src
+      └── pages
+          ├── Dashboard.css     ← keep
+          ├── Feed.css          ← keep
+          ├── Feed.jsx          ← keep
+          ├── Sidebar.jsx       ← keep
+          ├── StudentDashboard.jsx ← keep
+          ├── TeacherDashboard.jsx ← keep
+          ├── auth.css          ← keep
+          ├── auth.jsx          ← keep
+          ├── firebase.js       ← keep
+          ├── landing.css       ← keep
+          ├── landing.jsx       ← keep
+          └── src               ← DELETE THIS (entire folder)
+              └── pages/src/pages/...
+```
+
+Right-click "src" folder → Delete → Yes
+
+---
+
+## DONE! ✅
+
+After deleting, the src/pages/ folder should only have 11 files, no folders.

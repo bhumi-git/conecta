@@ -1,0 +1,160 @@
+.container {
+  text-align: center;
+  margin-top: 80px;
+}
+
+.title {
+  font-size: 56px;
+  font-weight: 600;
+  font-family:'Times New Roman', Times, serif;
+  color: #1f2d3d;
+}
+
+.subtitle {
+  color: #7a6f63;
+  margin-bottom: 50px;
+}
+
+.cards {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+}
+
+/* SAME SIZE CARDS */
+ 
+.card {
+  width: 300px;
+  height: 360px;
+  padding: 40px 25px;
+  border-radius: 30px;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  text-align: center;
+  
+  box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+  
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* HOVER EFFECT */
+
+
+/* COLORS */
+.student {
+  background: #d97757;
+  color: white;
+  padding: 40px;
+  border-radius: 20px;
+  width: 300px;
+  height:350px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  text-align: center;
+  font-family: 'Times New Roman', Times, serif;
+}
+.student:hover {
+  transform: translateY(-10px) scale(1.02);
+  box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+}
+
+.teacher {
+  background: #1e3a5f;
+  color: white;
+  padding: 40px;
+  border-radius: 20px;
+  width: 300px;
+  height:350px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  text-align: center;
+  font-family: 'Times New Roman', Times, serif;
+}
+.teacher:hover {
+  transform: translateY(-10px) scale(1.02);
+  box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+}
+
+/* ICON */
+.icon {
+  width: 100px;
+  height: 70px;
+  margin-bottom: 10px;
+}
+
+/* TEXT */
+.card h2 {
+  margin: 10px 0;
+  font-size: 24px;
+}
+
+.card p {
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+/* BUTTON */
+.button {
+  padding: 10px 20px;
+  border-radius: 25px;
+  border: none;
+  cursor: pointer;
+  background: white;
+  font-weight: 500;
+
+  transition: all 0.2s ease;
+}
+
+/* hover */
+.button:hover {
+  transform: translateY(-2px);
+  background: #f3f3f3;
+}
+
+/* click effect */
+.button:active {
+  transform: scale(0.95);
+}
+
+.icon {
+  width: 60px;
+  height: 60px;
+  margin-bottom: 10px;
+  transition: transform 0.3s ease;
+}
+
+/* icon moves slightly on hover */
+.card:hover .icon {
+  transform: scale(1.1) rotate(-3deg);
+}
+
+.teacher .button{
+color: #1e3a5f;
+}
+.student:hover {
+  box-shadow: 0 25px 60px rgba(217, 119, 87, 0.4);
+}
+
+.teacher:hover {
+  box-shadow: 0 25px 60px rgba(30, 58, 95, 0.4);
+}
+
+.student .button{
+  color:#d97757;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.cards {
+  animation: fadeInUp 0.8s ease;
+}
