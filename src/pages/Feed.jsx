@@ -25,12 +25,6 @@ const DUMMY_POSTS = [
     content: "Can anyone help me understand the difference between supervised and unsupervised learning? I'm preparing for my ML exam and getting confused with the concepts.",
     tags: ["#Machine Learning", "#Help", "#Exam"], likes: 7, comments: 15,
   },
-  {
-    id: 4, author: "Prof. James Miller", role: "Teacher", avatar: "👨‍🏫",
-    avatarBg: "#1E3A5F", time: "2 days ago", type: "Announcement",
-    content: "Congratulations to all students who completed the Web Development bootcamp! Results are out — 92% pass rate this cohort. Proud of every one of you.",
-    tags: ["#WebDev", "#Results", "#Achievement"], likes: 42, comments: 19,
-  },
 ];
 
 const TYPE_COLORS = {
@@ -47,8 +41,6 @@ export default function Feed() {
   const [activeFilter, setActiveFilter] = useState("All");
   const [posts, setPosts] = useState(DUMMY_POSTS);
   const [likedPosts, setLikedPosts] = useState([]);
-  const [showModal, setShowModal] = useState(false);
-  const [newPost, setNewPost] = useState({ type: "Announcement", content: "", tags: "" });
 
   const filtered = activeFilter === "All"
     ? posts
@@ -63,25 +55,6 @@ export default function Feed() {
     ));
   }
 
-  function handleCreatePost() {
-    if (!newPost.content.trim()) return;
-    const post = {
-      id: Date.now(),
-      author: "Guest User",
-      role: role === "student" ? "Student" : "Teacher",
-      avatar: role === "student" ? "🎓" : "📘",
-      avatarBg: role === "student" ? "#C1623F" : "#1E3A5F",
-      time: "Just now",
-      type: newPost.type,
-      content: newPost.content,
-      tags: newPost.tags.split(",").map(t => t.trim()).filter(Boolean).map(t => t.startsWith("#") ? t : `#${t}`),
-      likes: 0, comments: 0,
-    };
-    setPosts(prev => [post, ...prev]);
-    setNewPost({ type: "Announcement", content: "", tags: "" });
-    setShowModal(false);
-  }
-
   const accentColor = role === "student" ? "#C1623F" : "#1E3A5F";
 
   return (
@@ -89,19 +62,13 @@ export default function Feed() {
       <Sidebar role={role} />
       <main className="page-main">
         <div className="page-content">
-
-          {/* Header */}
           <div className="feed-header">
             <div>
               <h1 className="page-title">Feed</h1>
               <p className="page-subtitle">Stay updated with announcements, projects, and discussions</p>
             </div>
-            <button className="create-btn" style={{ background: accentColor }} onClick={() => setShowModal(true)}>
-              + Create Post
-            </button>
           </div>
 
-          {/* Filters */}
           <div className="filter-bar">
             {FILTERS.map(f => (
               <button
@@ -115,7 +82,6 @@ export default function Feed() {
             ))}
           </div>
 
-          {/* Posts */}
           <div className="posts-list">
             {filtered.map(post => (
               <div key={post.id} className="post-card">
@@ -165,57 +131,6 @@ export default function Feed() {
           </div>
         </div>
       </main>
-
-      {/* Create Post Modal */}
-      {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>Create Post</h2>
-              <button className="modal-close" onClick={() => setShowModal(false)}>✕</button>
-            </div>
-
-            <div className="modal-body">
-              <label className="modal-label">Post Type</label>
-              <div className="type-selector">
-                {["Announcement", "Project", "Doubt", "Achievement"].map(t => (
-                  <button
-                    key={t}
-                    className={`type-btn ${newPost.type === t ? "type-btn--active" : ""}`}
-                    style={newPost.type === t ? { background: accentColor, color: "#fff", borderColor: accentColor } : {}}
-                    onClick={() => setNewPost(p => ({ ...p, type: t }))}
-                  >
-                    {t}
-                  </button>
-                ))}
-              </div>
-
-              <label className="modal-label">What's on your mind?</label>
-              <textarea
-                className="modal-textarea"
-                placeholder="Share your thoughts, announcements, or questions..."
-                value={newPost.content}
-                onChange={e => setNewPost(p => ({ ...p, content: e.target.value }))}
-              />
-
-              <label className="modal-label">Tags (comma separated)</label>
-              <input
-                className="modal-input"
-                placeholder="e.g. Machine Learning, React, AI"
-                value={newPost.tags}
-                onChange={e => setNewPost(p => ({ ...p, tags: e.target.value }))}
-              />
-            </div>
-
-            <div className="modal-footer">
-              <button className="modal-cancel" onClick={() => setShowModal(false)}>Cancel</button>
-              <button className="modal-submit" style={{ background: accentColor }} onClick={handleCreatePost}>
-                Post
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

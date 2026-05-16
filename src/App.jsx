@@ -4,7 +4,6 @@ import Landing from "./pages/landing.jsx";
 import Auth from "./pages/auth.jsx";
 import StudentDashboard from "./pages/StudentDashboard.jsx";
 import TeacherDashboard from "./pages/TeacherDashboard.jsx";
-import Feed from "./pages/Feed.jsx";
 
 function App() {
   return (
@@ -20,8 +19,7 @@ function App() {
         <Route path="/dashboard/student" element={<StudentDashboard />} />
         <Route path="/dashboard/teacher" element={<TeacherDashboard />} />
 
-        {/*Feed*/}
-        <Route path="/feed" element={<Feed />} />
+      
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

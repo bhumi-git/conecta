@@ -56,17 +56,38 @@ export default function Auth() {
   }
 
   // ── Save role to Firestore ───────────────────────────────────────────
-  const saveUserRoleToFirestore = async (uid, userEmail, roleToSave) => {
-    const userDocRef = doc(db, "users", uid);
-    const userDocSnap = await getDoc(userDocRef);
-    if (!userDocSnap.exists()) {
-      await setDoc(userDocRef, {
-        email: userEmail,
-        role: roleToSave,
-        createdAt: new Date(),
-      });
-    }
-  };
+ const saveUserRoleToFirestore = async (uid, userEmail, roleToSave) => {
+  const userDocRef = doc(db, "users", uid)
+  const userDocSnap = await getDoc(userDocRef)
+  if (!userDocSnap.exists()) {
+    await setDoc(userDocRef, {
+      email:       userEmail,
+      role:        roleToSave,
+      name:        "",          // ← user sets this in Settings
+      bio:         "",
+      department:  "",
+      semester:    roleToSave === "student" ? "" : null,
+      designation: roleToSave === "teacher" ? "" : null,
+      subject:     roleToSave === "teacher" ? "" : null,
+      location:    "",
+      interests:   [],
+      skills:      [],
+      achievements:[],
+      connections: [],
+      stats: {
+        connections:     0,
+        projects:        0,
+        messages:        0,
+        achievements:    0,
+        students:        0,
+        projectsPosted:  0,
+        queriesAnswered: 0,
+        impactScore:     0,
+      },
+      createdAt: new Date(),
+    })
+  }
+}
 
   // ── Google Login ─────────────────────────────────────────────────────
 const handleGoogleLogin = async () => {
