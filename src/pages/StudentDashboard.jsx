@@ -206,6 +206,8 @@ function FeedView({ profile, uid, T }) {
   const [text, setText]     = useState("")
   const [posting, setPosting] = useState(false)
   const [filter, setFilter] = useState("all") // all | announcements | posts
+  const [search, setSearch] = useState("")
+   const [myPosts, setMyPosts] = useState(false)
 
   useEffect(() => {
     const unsub = onSnapshot(collection(db, "posts"), snap => {
@@ -247,7 +249,16 @@ function FeedView({ profile, uid, T }) {
     })
   }
 
-  const filtered = posts.filter(p => filter==="all" || p.type===filter || (filter==="announcements" && p.type==="announcement"))
+  const filtered = posts.filter(p => {
+  if (p.deleted) return false
+  if (myPosts && p.authorId !== uid) return false
+  if (search && !p.content?.toLowerCase().includes(search.toLowerCase()) &&
+      !p.authorName?.toLowerCase().includes(search.toLowerCase())) return false
+  if (filter==="all") return true
+  if (filter==="announcement") return p.type==="announcement"
+  if (filter==="post") return p.type==="post"
+  return true
+})
 
   return (
     <div style={{ maxWidth:640 }}>
@@ -277,6 +288,24 @@ function FeedView({ profile, uid, T }) {
       </div>
 
       {/* Filter tabs */}
+      <div style={{ position:"relative", marginBottom:14 }}>
+  <svg style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", pointerEvents:"none" }}
+    width="15" height="15" viewBox="0 0 24 24" fill="none"
+    stroke={T.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/>
+  </svg>
+  <input
+    value={search}
+    onChange={e => setSearch(e.target.value)}
+    placeholder="Search posts..."
+    style={{
+      width:"100%", border:`1px solid ${T.inputBorder}`,
+      borderRadius:10, padding:"10px 12px 10px 36px",
+      fontSize:14, background:T.input, color:T.text,
+      outline:"none", boxSizing:"border-box",
+    }}
+  />
+</div>
       <div style={{ display:"flex", gap:8, marginBottom:20 }}>
         {[["all","All Posts"],["post","Student Posts"],["announcement","Announcements"]].map(([val,label]) => (
           <button key={val} onClick={() => setFilter(val)} style={{
@@ -285,6 +314,11 @@ function FeedView({ profile, uid, T }) {
             fontSize:12, cursor:"pointer", fontWeight:filter===val?600:400,
           }}>{label}</button>
         ))}
+          <button onClick={() => setMyPosts(p=>!p)} style={{
+          padding:"6px 14px", borderRadius:20, border:`1px solid ${myPosts?T.warm:T.border}`,
+          background:myPosts?T.warm:"transparent", color:myPosts?"#fff":T.muted,
+          fontSize:12, cursor:"pointer", fontWeight:myPosts?600:400, marginLeft:"auto",
+        }}>My Posts Only</button>
       </div>
 
       {/* Posts */}
@@ -312,6 +346,7 @@ function FeedView({ profile, uid, T }) {
                 display:"flex", alignItems:"center", gap:5, background:"none", border:"none",
                 cursor:"pointer", color:liked?T.accent:T.muted, fontSize:13,
               }}>
+                
                 <Ico d={I.heart} size={15} color={liked?T.accent:T.muted} />
                 {(post.likes||[]).length} {(post.likes||[]).length===1?"Like":"Likes"}
               </button>
@@ -330,7 +365,93 @@ function MatchView({ profile, uid, T }) {
   const [filter, setFilter] = useState("all") // all | teacher | student
   const [loading, setLoading] = useState(true)
   const [connected, setConnected] = useState(new Set())
+  const [aiResults, setAiResults]   = useState(null)  // null = not searched yet
+const [aiLoading, setAiLoading]   = useState(false)
+const [aiQuery, setAiQuery]       = useState("")
+const handleAiSearch = async () => {
+  if (!aiQuery.trim() || !users.length) return
+  setAiLoading(true)
+  setAiResults(null)
 
+  // Simulate thinking time for UX
+  await new Promise(r => setTimeout(r, 800))
+
+  const query = aiQuery.toLowerCase()
+  const keywords = query.split(" ").filter(w => w.length > 2)
+
+  const scored = users.map(u => {
+    let score = 0
+    const reasons = []
+
+    const searchable = [
+      u.name, u.role, u.department, u.bio,
+      u.designation, u.subject, u.semester,
+      ...(u.interests || []),
+      ...(u.skills || []).map(s => s.name),
+    ].filter(Boolean).map(s => s.toLowerCase())
+
+    keywords.forEach(keyword => {
+      searchable.forEach(field => {
+        if (field.includes(keyword)) {
+          score += 2
+        }
+      })
+    })
+
+    // Role match bonus
+    if (query.includes("teacher") && u.role === "teacher") {
+      score += 5
+      reasons.push(`Teacher${u.subject ? ` specializing in ${u.subject}` : ""}`)
+    }
+    if (query.includes("student") && u.role === "student") {
+      score += 5
+      reasons.push(`Student${u.department ? ` from ${u.department}` : ""}`)
+    }
+
+    // Department match
+    if (u.department && query.includes(u.department.toLowerCase())) {
+      score += 4
+      reasons.push(`From ${u.department} department`)
+    }
+
+    // Skills match
+    const matchedSkills = (u.skills || [])
+      .filter(s => keywords.some(k => s.name?.toLowerCase().includes(k)))
+      .map(s => s.name)
+    if (matchedSkills.length > 0) {
+      score += matchedSkills.length * 3
+      reasons.push(`Knows ${matchedSkills.join(", ")}`)
+    }
+
+    // Interests match
+    const matchedInterests = (u.interests || [])
+      .filter(i => keywords.some(k => i.toLowerCase().includes(k)))
+    if (matchedInterests.length > 0) {
+      score += matchedInterests.length * 2
+      reasons.push(`Interested in ${matchedInterests.join(", ")}`)
+    }
+
+    // Bio match
+    if (u.bio && keywords.some(k => u.bio.toLowerCase().includes(k))) {
+      score += 2
+      reasons.push("Profile matches your search")
+    }
+
+    const matchReason = reasons.length > 0
+      ? reasons.join(" · ")
+      : `Matches based on profile keywords`
+
+    return { ...u, score, matchReason }
+  })
+
+  const results = scored
+    .filter(u => u.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 5)
+
+  setAiResults(results)
+  setAiLoading(false)
+}
   useEffect(() => {
     getDocs(collection(db, "users")).then(snap => {
       const all = snap.docs.filter(d => d.id!==uid).map(d => ({ id:d.id, ...d.data() }))
@@ -372,7 +493,121 @@ function MatchView({ profile, uid, T }) {
     <div>
       <h1 style={{ fontSize:26, fontWeight:700, margin:"0 0 6px", color:T.text }}>Discover People</h1>
       <p style={{ color:T.muted, fontSize:14, margin:"0 0 24px" }}>Connect with students and teachers on the platform</p>
+       {/* AI Search */}
+<div style={{
+  background: T.card, border:`1px solid ${T.border}`,
+  borderRadius:14, padding:20, marginBottom:24,
+}}>
+  <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
+    <span style={{ fontSize:18 }}>✨</span>
+    <p style={{ margin:0, fontWeight:600, fontSize:14, color:T.text }}>AI Profile Match</p>
+    <span style={{ fontSize:11, background:T.accentLight, color:T.accent,
+      padding:"2px 8px", borderRadius:10, fontWeight:600 }}>Beta</span>
+  </div>
+  <p style={{ margin:"0 0 12px", fontSize:13, color:T.muted }}>
+    Describe who you're looking for in plain words
+  </p>
+  <div style={{ display:"flex", gap:10 }}>
+    <input
+      value={aiQuery}
+      onChange={e => setAiQuery(e.target.value)}
+      onKeyDown={e => e.key==="Enter" && handleAiSearch()}
+      placeholder='e.g. "physics teacher for extra classes" or "React developer for project"'
+      style={{
+        flex:1, border:`1px solid ${T.inputBorder}`, borderRadius:10,
+        padding:"10px 14px", fontSize:14, background:T.input,
+        color:T.text, outline:"none",
+      }}
+    />
+    <button onClick={handleAiSearch} disabled={aiLoading || !aiQuery.trim()} style={{
+      background: aiQuery.trim() ? T.accent : "#ccc",
+      color:"#fff", border:"none", borderRadius:10,
+      padding:"10px 20px", cursor: aiQuery.trim() ? "pointer" : "not-allowed",
+      fontSize:13, fontWeight:600, whiteSpace:"nowrap",
+    }}>
+      {aiLoading ? "Matching..." : "✨ Match"}
+    </button>
+  </div>
+</div>
+{/* AI Results */}
+{aiResults !== null && (
+  <div style={{ marginBottom:24 }}>
+    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
+      <p style={{ margin:0, fontWeight:700, fontSize:14, color:T.text }}>
+        ✨ AI Matched {aiResults.length} profile{aiResults.length!==1?"s":""}
+      </p>
+      <button onClick={() => { setAiResults(null); setAiQuery("") }} style={{
+        background:"none", border:"none", color:T.muted,
+        fontSize:12, cursor:"pointer",
+      }}>
+        Clear ×
+      </button>
+    </div>
 
+    {aiResults.length === 0 && (
+      <p style={{ color:T.muted, fontSize:14 }}>No strong matches found. Try different keywords.</p>
+    )}
+
+    <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:16 }}>
+      {aiResults.map(u => {
+        const isConn    = connected.has(u.id)
+        const isTeacher = u.role === "teacher"
+        return (
+          <div key={u.id} style={{
+            background:T.card, borderRadius:14, padding:20,
+            border:`2px solid ${T.accent}`,  // highlighted border for AI results
+            position:"relative",
+          }}>
+            {/* AI match badge */}
+            <div style={{
+              position:"absolute", top:12, right:12,
+              fontSize:10, fontWeight:700, color:T.accent,
+              background:T.accentLight, padding:"2px 8px", borderRadius:10,
+            }}>✨ AI Match</div>
+
+            <div style={{ display:"flex", gap:12, alignItems:"flex-start", marginBottom:10 }}>
+              <div style={{
+                width:44, height:44, borderRadius:12, flexShrink:0,
+                background: isTeacher ? "#2D3B8E" : T.accentLight,
+                display:"flex", alignItems:"center", justifyContent:"center", fontSize:20,
+              }}>
+                {isTeacher ? "🧑‍🏫" : "🎓"}
+              </div>
+              <div>
+                <p style={{ margin:"0 0 2px", fontWeight:700, fontSize:14, color:T.text }}>{u.name}</p>
+                <span style={{
+                  fontSize:11, fontWeight:600, padding:"2px 8px", borderRadius:10,
+                  color: isTeacher ? "#2D3B8E" : T.accent,
+                  background: isTeacher ? "#EEF0FF" : T.accentLight,
+                }}>{isTeacher ? "Teacher" : "Student"}</span>
+              </div>
+            </div>
+
+            {/* Match reason — this is the AI explanation */}
+            <div style={{
+              background:T.accentLight, borderRadius:8,
+              padding:"8px 12px", marginBottom:12,
+            }}>
+              <p style={{ margin:0, fontSize:12, color:T.accent, lineHeight:1.5 }}>
+                💡 {u.matchReason}
+              </p>
+            </div>
+
+            <button onClick={() => handleConnect(u.id, u)} style={{
+              width:"100%", padding:"8px", borderRadius:8,
+              cursor:"pointer", fontSize:13, fontWeight:600,
+              border:`1px solid ${isConn ? T.border : T.accent}`,
+              background: isConn ? "transparent" : T.accent,
+              color: isConn ? T.muted : "#fff",
+            }}>
+              {isConn ? "✓ Connected" : "+ Connect"}
+            </button>
+          </div>
+        )
+      })}
+    </div>
+  </div>
+)}
       {/* Search + filter */}
       <div style={{ display:"flex", gap:12, marginBottom:24, alignItems:"center" }}>
         <div style={{ flex:1, position:"relative" }}>
