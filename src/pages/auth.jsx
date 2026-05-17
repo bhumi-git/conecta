@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState,useEffect } from "react";
 import "./auth.css";
 import { auth, db } from "./firebase";
 
@@ -30,6 +30,15 @@ export default function Auth() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [selectedRole, setSelectedRole] = useState(initialRole);
+  const [darkMode, setDarkMode] = useState(false);
+
+useEffect(() => {
+  if (darkMode) {
+    document.body.classList.add("dark-mode");
+  } else {
+    document.body.classList.remove("dark-mode");
+  }
+}, [darkMode]);
 
   // ── Friendly error messages ──────────────────────────────────────────
   function getFriendlyError(code) {
@@ -257,6 +266,15 @@ const handleGoogleLogin = async () => {
   }
 };
   return (
+<div>
+
+      {/* Theme Toggle Button */}
+      <button
+        className="theme-toggle"
+        onClick={() => setDarkMode(!darkMode)}
+      >
+        {darkMode ? "☀️" : "🌙"}
+      </button>
     <div className="container">
       <h1 className="title">{isLogin ? "Sign In" : "Create your account"}</h1>
       <p className="subtitle">
@@ -399,6 +417,7 @@ const handleGoogleLogin = async () => {
         </p>
 
       </div>
+    </div>
     </div>
   );
 }

@@ -6,6 +6,7 @@ import {
   onSnapshot, serverTimestamp, arrayUnion, arrayRemove
 } from "firebase/firestore"
 import { auth, db } from "./firebase"
+import ChatView from "./ChatView"
 
 // ── Themes ────────────────────────────────────────────────────
 const LIGHT = {
@@ -76,6 +77,7 @@ function Sidebar({ profile, currentView, setCurrentView, onLogout, T }) {
     { id:"feed",      label:"Feed",         icon:I.feed },
     { id:"match",     label:"Students",     icon:I.match },
     { id:"profile",   label:"Profile",      icon:I.profile },
+    { id:"chat", label:"Messages", icon:I.chat },
     { id:"announce",  label:"Announce",     icon:I.announce },
     { id:"settings",  label:"Settings",     icon:I.settings },
   ]
@@ -145,7 +147,7 @@ function Sidebar({ profile, currentView, setCurrentView, onLogout, T }) {
 // ── Dashboard home ────────────────────────────────────────────
 function DashboardView({ profile, activity, announcements, T }) {
   const stats = [
-    { icon:I.people, val:profile?.stats?.students??0,        label:"Students" },
+   { icon:I.people, val:(profile?.connections||[]).length, label:"Connections" },
     { icon:I.book,   val:profile?.stats?.projectsPosted??0,  label:"Projects Posted" },
     { icon:I.chat,   val:profile?.stats?.queriesAnswered??0, label:"Queries Answered" },
     { icon:I.chart,  val:`${profile?.stats?.impactScore??0}%`, label:"Impact Score" },
@@ -181,7 +183,7 @@ function DashboardView({ profile, activity, announcements, T }) {
                 <div style={{ width:34, height:34, borderRadius:"50%", background:T.accentLight, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, flexShrink:0 }}>{a.avatar||"👤"}</div>
                 <div>
                   <p style={{ margin:"0 0 2px", fontSize:13, color:T.text, lineHeight:1.4 }}><strong>{a.actor}</strong> {a.action}</p>
-                  <span style={{ fontSize:11, color:T.muted }}>{a.time}</span>
+                  <span style={{ fontSize:11, color:T.muted }}>{timeAgo(a.timestamp)}</span>
                 </div>
               </div>
             ))
@@ -239,6 +241,12 @@ function FeedView({ profile, uid, T }) {
         likes:      [],
         createdAt:  serverTimestamp(),
       })
+      await addDoc(collection(db, "users", uid, "activity"), {
+  actor:     profile?.name || "You",
+  action:    "shared a new post on the feed",
+  avatar:    "📝",
+  timestamp: serverTimestamp(),
+})
       setText("")
     } catch(e) { console.error(e) }
     setPosting(false)
@@ -366,12 +374,18 @@ function MatchView({ profile, uid, T }) {
     if (profile?.connections) setConnected(new Set(profile.connections))
   }, [uid, profile?.connections])
 
-  const handleConnect = async (targetId) => {
+  const handleConnect = async (targetId,u) => {
     const already = connected.has(targetId)
     const newSet  = new Set(connected)
     if (already) newSet.delete(targetId); else newSet.add(targetId)
     setConnected(newSet)
     await updateDoc(doc(db,"users",uid), { connections:[...newSet] })
+    await addDoc(collection(db, "users", uid, "activity"), {
+  actor:   profile?.name || "You",
+  action:  already ? `disconnected from ${u?.name||"someone"}` : `connected with ${u?.name||"someone"}`,
+  avatar:  "🤝",
+  timestamp: serverTimestamp(),
+})
   }
 
   const filtered = users.filter(u => {
@@ -438,7 +452,7 @@ function MatchView({ profile, uid, T }) {
             ))}
           </div>
         )}
-        <button onClick={() => handleConnect(u.id)} style={{
+        <button onClick={() => handleConnect(u.id,u)} style={{
           width:"100%", padding:"8px", borderRadius:8, cursor:"pointer", fontSize:13, fontWeight:600,
           border:`1px solid ${isConn?T.border:T.accent}`,
           background:isConn?"transparent":T.accent,
@@ -957,8 +971,8 @@ export default function TeacherDashboard() {
     profile:   <ProfileView profile={profile} uid={user?.uid} onProfileUpdate={updateProfile} T={T} />,
     announce:  <AnnounceView profile={profile} uid={user?.uid} T={T} />,
     settings:  <SettingsView profile={profile} uid={user?.uid} dark={dark} setDark={setDark} onProfileUpdate={updateProfile} T={T} />,
+    chat: <ChatView profile={profile} uid={user?.uid} T={T} />,
   }
-
   return (
     <div style={{ display:"flex", background:T.bg, minHeight:"100vh", fontFamily:"system-ui,sans-serif" }}>
       <Sidebar profile={profile} currentView={view} setCurrentView={setView} onLogout={logout} T={T} />

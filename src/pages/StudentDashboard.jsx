@@ -6,6 +6,7 @@ import {
   onSnapshot, serverTimestamp, arrayUnion, arrayRemove
 } from "firebase/firestore"
 import { auth, db } from "./firebase"
+import ChatView from "./ChatView"
 
 // ── Themes ────────────────────────────────────────────────────
 const LIGHT = {
@@ -70,6 +71,7 @@ function Sidebar({ profile, currentView, setCurrentView, onLogout, T }) {
     { id:"feed",      label:"Feed",      icon:I.feed },
     { id:"match",     label:"Match",     icon:I.match },
     { id:"profile",   label:"Profile",   icon:I.profile },
+    { id:"chat", label:"Messages", icon:I.chat },
     { id:"settings",  label:"Settings",  icon:I.settings },
   ]
   return (
@@ -138,7 +140,7 @@ function Sidebar({ profile, currentView, setCurrentView, onLogout, T }) {
 // ── Dashboard home ────────────────────────────────────────────
 function DashboardView({ profile, activity, announcements, T }) {
   const stats = [
-    { icon:I.people, val:profile?.stats?.connections??0, label:"Connections" },
+   { icon:I.people, val:(profile?.connections||[]).length, label:"Connections" },
     { icon:I.book,   val:profile?.stats?.projects??0,    label:"Projects" },
     { icon:I.chat,   val:profile?.stats?.messages??0,    label:"Messages" },
     { icon:I.trophy, val:profile?.stats?.achievements??0,label:"Achievements" },
@@ -171,7 +173,7 @@ function DashboardView({ profile, activity, announcements, T }) {
                 <div style={{ width:34, height:34, borderRadius:"50%", background:T.accentLight, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, flexShrink:0 }}>{a.avatar||"👤"}</div>
                 <div>
                   <p style={{ margin:"0 0 2px", fontSize:13, color:T.text, lineHeight:1.4 }}><strong>{a.actor}</strong> {a.action}</p>
-                  <span style={{ fontSize:11, color:T.muted }}>{a.time}</span>
+                  <span style={{ fontSize:11, color:T.muted }}>{timeAgo(a.timestamp)}</span>
                 </div>
               </div>
             ))
@@ -227,6 +229,12 @@ function FeedView({ profile, uid, T }) {
         likes:      [],
         createdAt:  serverTimestamp(),
       })
+      await addDoc(collection(db, "users", uid, "activity"), {
+      actor:     profile?.name || "You",
+      action:    "shared a new post on the feed",
+      avatar:    "📝",
+      timestamp: serverTimestamp(),
+})
       setText("")
     } catch(e) { console.error(e) }
     setPosting(false)
@@ -333,12 +341,18 @@ function MatchView({ profile, uid, T }) {
     if (profile?.connections) setConnected(new Set(profile.connections))
   }, [uid, profile])
 
-  const handleConnect = async (targetId) => {
+  const handleConnect = async (targetId,u) => {
     const already = connected.has(targetId)
     const newSet = new Set(connected)
     if (already) newSet.delete(targetId); else newSet.add(targetId)
     setConnected(newSet)
     await updateDoc(doc(db, "users", uid), { connections: [...newSet] })
+    await addDoc(collection(db, "users", uid, "activity"), {
+  actor:   profile?.name || "You",
+  action:  already ? `disconnected from ${u?.name||"someone"}` : `connected with ${u?.name||"someone"}`,
+  avatar:  "🤝",
+  timestamp: serverTimestamp(),
+})
   }
 
   const filtered = users.filter(u => {
@@ -699,6 +713,7 @@ export default function StudentDashboard() {
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (fu) => {
       if (!fu) { navigate("/"); return }
+      
       try {
         const snap = await getDoc(doc(db,"users",fu.uid))
         const data = snap.exists() ? snap.data() : {}
@@ -734,9 +749,12 @@ export default function StudentDashboard() {
     match:     <MatchView profile={profile} uid={user?.uid} T={T} />,
     profile:   <ProfileView profile={profile} uid={user?.uid} onProfileUpdate={updateProfile} T={T} />,
     settings:  <SettingsView profile={profile} uid={user?.uid} dark={dark} setDark={setDark} onProfileUpdate={updateProfile} T={T} />,
-  }
+    chat: <ChatView profile={profile} uid={user?.uid} T={T} />,
+    }
+
 
   return (
+    
     <div style={{ display:"flex", background:T.bg, minHeight:"100vh", fontFamily:"system-ui,sans-serif" }}>
       <Sidebar profile={profile} currentView={view} setCurrentView={setView} onLogout={logout} T={T} />
       <main style={{ marginLeft:230, flex:1, padding:"36px 40px", minHeight:"100vh" }}>
