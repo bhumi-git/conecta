@@ -1,4 +1,4 @@
-# Project Structure Cleanup Guide
+# Project Structure
 
 ## CURRENT STRUCTURE (CLEAN - KEEP):
 ```
@@ -21,23 +21,12 @@ Conecta/
 │       ├── Feed.css               ✅ Feed styles
 │       ├── Sidebar.jsx            ✅ Sidebar component
 │       ├── Dashboard.css          ✅ Dashboard styles
-│       └── src/                   ❌ DELETE THIS (nested duplicate)
+│       └── src/                   
 │           └── pages/src/pages/...
 ```
 
-## FOLDERS TO DELETE:
-```
-❌ src/pages/src/                    (entire nested tree)
-   This contains duplicate, old files that are no longer used.
-   The actual files are in src/pages/ (one level up)
-```
 
-## HOW TO MANUALLY DELETE:
-1. Open File Explorer
-2. Navigate to: `C:\Users\HP\OneDrive\Desktop\Conecta\src\pages\`
-3. Find the folder named `src` (highlighted below)
-4. Right-click → Delete
-5. Confirm deletion
+
 
 ## FINAL CLEAN STRUCTURE (after cleanup):
 ```
@@ -55,5 +44,3 @@ Conecta/src/pages/
 └── landing.jsx
 ```
 
-## VERIFICATION:
-After deletion, the src/pages/ folder should contain EXACTLY 11 files (no nested folders).
